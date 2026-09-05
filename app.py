@@ -6,19 +6,18 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
-from model_utils import build_preprocessor, save_model, load_model
+from model_utils import build_preprocessor, save_model, load_model, PyTorchANNClassifier
 
 st.set_page_config(
-    page_title="Movie Genre Classification Studio",
+    page_title="Movie Genre ANN Studio",
     page_icon="🎬",
     layout="wide"
 )
 
-st.title("🎬 Movie Genre Deep Learning Studio")
-st.markdown("Multi-class Deep Neural Network (DNN) classifying movies into **Action**, **Comedy**, **Drama**, and **Thriller** based on Budget, Runtime, Rating, Release Year, and Language.")
+st.title("🎬 Movie Genre Artificial Neural Network (ANN) Studio")
+st.markdown("Multi-class **PyTorch Artificial Neural Network (ANN)** classifying movies into **Action**, **Comedy**, **Drama**, and **Thriller** based on Budget, Runtime, Rating, Release Year, and Language.")
 
 DATA_FILE = Path(__file__).resolve().parent / "movie_genre.csv"
 
@@ -28,7 +27,7 @@ def load_data():
 
 df = load_data()
 
-tab1, tab2, tab3 = st.tabs(["📊 Dataset Explorer", "⚡ Neural Network Studio", "🔮 Live Inference"])
+tab1, tab2, tab3 = st.tabs(["📊 Dataset Explorer", "⚡ ANN Network Studio", "🔮 Live Inference"])
 
 # TAB 1
 with tab1:
@@ -59,14 +58,14 @@ with tab1:
 
 # TAB 2
 with tab2:
-    st.subheader("Interactive Model Training")
+    st.subheader("Interactive PyTorch ANN Model Training")
     c1, c2, c3 = st.columns(3)
     with c1:
         l1 = st.slider("Layer 1 Neurons", 32, 512, 256, step=32)
         l2 = st.slider("Layer 2 Neurons", 16, 256, 128, step=16)
         l3 = st.slider("Layer 3 Neurons", 0, 128, 64, step=16)
     with c2:
-        activation = st.selectbox("Activation", ["relu", "tanh", "logistic"])
+        activation = st.selectbox("Activation Function", ["relu", "tanh", "sigmoid"])
         lr = st.select_slider("Learning Rate", options=[0.0005, 0.001, 0.005, 0.01], value=0.001)
         epochs = st.slider("Epochs", 50, 500, 250, step=25)
     with c3:
@@ -75,8 +74,8 @@ with tab2:
 
     layers = [l1, l2] if l3 == 0 else [l1, l2, l3]
 
-    if st.button("🚀 Train Model", type="primary"):
-        with st.spinner("Training Deep Neural Network..."):
+    if st.button("🚀 Train PyTorch ANN", type="primary"):
+        with st.spinner("Training PyTorch Artificial Neural Network..."):
             X = df.drop(columns=["Genre"])
             y_raw = df["Genre"]
             le = LabelEncoder()
@@ -91,10 +90,10 @@ with tab2:
             X_train_proc = preprocessor.fit_transform(X_train)
             X_test_proc = preprocessor.transform(X_test)
 
-            model = MLPClassifier(
+            model = PyTorchANNClassifier(
                 hidden_layer_sizes=tuple(layers),
                 activation=activation,
-                learning_rate_init=lr,
+                lr=lr,
                 max_iter=epochs,
                 early_stopping=early_stop,
                 random_state=42
@@ -113,16 +112,16 @@ with tab2:
                 sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=class_names, yticklabels=class_names, ax=ax_cm)
                 st.pyplot(fig_cm)
             with col_res2:
-                st.subheader("Loss Curve")
+                st.subheader("PyTorch Loss Convergence")
                 fig_l, ax_l = plt.subplots(figsize=(6, 4))
-                ax_l.plot(model.loss_curve_, color="#2563eb", lw=2)
+                ax_l.plot(model.loss_curve_, color="#2563eb", lw=2, marker="o", markersize=3)
                 ax_l.set_xlabel("Epochs")
-                ax_l.set_ylabel("Loss")
+                ax_l.set_ylabel("CrossEntropy Loss")
                 st.pyplot(fig_l)
 
 # TAB 3
 with tab3:
-    st.subheader("Live Prediction Playground")
+    st.subheader("Live Prediction Playground (PyTorch ANN)")
     col_in1, col_in2, col_in3 = st.columns(3)
     with col_in1:
         in_budget = st.number_input("Budget ($ Millions)", min_value=1.0, max_value=500.0, value=75.0)
@@ -150,12 +149,12 @@ with tab3:
 
         preprocessor, _, _ = build_preprocessor(X)
         X_proc = preprocessor.fit_transform(X)
-        model = MLPClassifier(hidden_layer_sizes=(256, 128, 64), max_iter=200, random_state=42)
+        model = PyTorchANNClassifier(hidden_layer_sizes=(256, 128, 64), max_iter=200, random_state=42)
         model.fit(X_proc, y)
 
         sample_proc = preprocessor.transform(sample_df)
-        pred_idx = model.predict(sample_proc)[0]
-        pred_genre = class_names[pred_idx]
+        pred_label = model.predict(sample_proc)[0]
+        pred_genre = pred_label if isinstance(pred_label, str) else class_names[pred_label]
         probs = model.predict_proba(sample_proc)[0]
 
         st.success(f"🎯 **Predicted Genre:** `{pred_genre}`")

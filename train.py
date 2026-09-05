@@ -5,20 +5,31 @@ from pathlib import Path
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
+PROJECT_DIR = Path(__file__).resolve().parent
+if str(PROJECT_DIR) not in sys.path:
+    sys.path.insert(0, str(PROJECT_DIR))
+
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from model_utils import build_preprocessor, save_model, plot_classification_results
 
-DATASET_PATH = Path(__file__).resolve().parent / "movie_genre.csv"
+try:
+    from Project1_Movie_Genre_Classification.model_utils import (
+        build_preprocessor, save_model, plot_classification_results, PyTorchANNClassifier
+    )
+except ImportError:
+    from model_utils import (
+        build_preprocessor, save_model, plot_classification_results, PyTorchANNClassifier
+    )
+
+DATASET_PATH = PROJECT_DIR / "movie_genre.csv"
 
 
 def train_model(csv_path=DATASET_PATH):
     print("=" * 60)
-    print(" [+] Project 1: Training Deep Neural Network for Movie Genre Classification")
+    print(" [+] Project 1: Training PyTorch Artificial Neural Network (ANN) for Movie Genre Classification")
     print("=" * 60)
     
     df = pd.read_csv(csv_path)
@@ -43,19 +54,17 @@ def train_model(csv_path=DATASET_PATH):
     X_train_proc = preprocessor.fit_transform(X_train)
     X_test_proc = preprocessor.transform(X_test)
     
-    # Deep Neural Network: (256 -> 128 -> 64)
-    model = MLPClassifier(
+    # PyTorch Artificial Neural Network: (256 -> 128 -> 64)
+    model = PyTorchANNClassifier(
         hidden_layer_sizes=(256, 128, 64),
         activation="relu",
-        solver="adam",
-        alpha=0.001,
-        batch_size=32,
-        learning_rate_init=0.001,
+        lr=0.001,
         max_iter=300,
-        random_state=42,
+        batch_size=32,
+        weight_decay=0.0001,
         early_stopping=True,
-        n_iter_no_change=15,
-        verbose=False
+        patience=15,
+        random_state=42
     )
     
     model.fit(X_train_proc, y_train)
@@ -73,7 +82,7 @@ def train_model(csv_path=DATASET_PATH):
     # Save artifacts
     plot_classification_results(
         y_test, y_pred, y_prob, class_names,
-        title="Movie Genre Classification",
+        title="Movie Genre Classification (PyTorch ANN)",
         filename="genre_evaluation.png",
         loss_curve=model.loss_curve_
     )
